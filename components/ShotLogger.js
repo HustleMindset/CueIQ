@@ -20,7 +20,7 @@ import poolTableImage from '../assets/images/pooltable.jpg';
 const TABLE_WIDTH = 300;
 const TABLE_HEIGHT = 600;
 const BALL_RADIUS = 12;
-const TABLE_PADDING = 15; // visual "rails" zone
+const TABLE_PADDING = 15;
 
 const BALL_COLORS = {
   1: '#FDB927', 2: '#0046AD', 3: '#C8102E', 4: '#552583',
@@ -33,21 +33,19 @@ export default function ShotLogger() {
   const navigation = useNavigation();
   const [balls, setBalls] = useState([]);
   const [selectedBallId, setSelectedBallId] = useState(null);
-  const [draggedBallNum, setDraggedBallNum] = useState(null);
   const [disabledNumbers, setDisabledNumbers] = useState([]);
   const tableRef = useRef();
   const lastTapRef = useRef({});
 
-  const isBallPlaced = (num) => disabledNumbers.includes(num);
-
   const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+  const isBallPlaced = (num) => disabledNumbers.includes(num);
 
   const addBall = (number, x = TABLE_WIDTH / 2, y = TABLE_HEIGHT / 2) => {
     if (isBallPlaced(number)) return;
     const clampedX = clamp(x, TABLE_PADDING, TABLE_WIDTH - TABLE_PADDING);
     const clampedY = clamp(y, TABLE_PADDING, TABLE_HEIGHT - TABLE_PADDING);
 
-    setBalls((prev) => [
+    setBalls(prev => [
       ...prev,
       {
         id: Date.now(),
@@ -58,14 +56,14 @@ export default function ShotLogger() {
         isStriped: number >= 9,
       },
     ]);
-    setDisabledNumbers((prev) => [...prev, number]);
+    setDisabledNumbers(prev => [...prev, number]);
   };
 
   const removeBall = (id) => {
-    const ball = balls.find((b) => b.id === id);
+    const ball = balls.find(b => b.id === id);
     if (!ball) return;
-    setBalls((prev) => prev.filter((b) => b.id !== id));
-    setDisabledNumbers((prev) => prev.filter((n) => n !== ball.number));
+    setBalls(prev => prev.filter(b => b.id !== id));
+    setDisabledNumbers(prev => prev.filter(n => n !== ball.number));
     if (selectedBallId === id) setSelectedBallId(null);
   };
 
@@ -76,7 +74,7 @@ export default function ShotLogger() {
       removeBall(id);
     } else {
       lastTapRef.current[id] = now;
-      setSelectedBallId((prev) => (prev === id ? null : id));
+      setSelectedBallId(prev => (prev === id ? null : id));
     }
   };
 
@@ -88,8 +86,8 @@ export default function ShotLogger() {
           UIManager.measure(findNodeHandle(tableRef.current), (_, __, ___, ____, px, py) => {
             const x = clamp(gesture.moveX - px, TABLE_PADDING, TABLE_WIDTH - TABLE_PADDING);
             const y = clamp(gesture.moveY - py, TABLE_PADDING, TABLE_HEIGHT - TABLE_PADDING);
-            setBalls((prev) =>
-              prev.map((b) => (b.id === selectedBallId ? { ...b, x, y } : b))
+            setBalls(prev =>
+              prev.map(b => (b.id === selectedBallId ? { ...b, x, y } : b))
             );
           });
         }
@@ -108,7 +106,7 @@ export default function ShotLogger() {
   };
 
   const renderBalls = () =>
-    balls.map((ball) => (
+    balls.map(ball => (
       <React.Fragment key={ball.id}>
         <Pressable onPress={() => onBallTap(ball.id)} style={{ position: 'absolute' }}>
           <Circle
@@ -116,7 +114,13 @@ export default function ShotLogger() {
             cy={ball.y}
             r={BALL_RADIUS}
             fill={ball.color}
-            stroke={selectedBallId === ball.id ? '#ffffff' : ball.isStriped ? '#fff' : 'black'}
+            stroke={
+              selectedBallId === ball.id
+                ? '#ffffff'
+                : ball.isStriped
+                ? '#fff'
+                : 'black'
+            }
             strokeWidth={selectedBallId === ball.id ? 3 : ball.isStriped ? 2 : 1}
           />
           <SvgText
@@ -139,19 +143,16 @@ export default function ShotLogger() {
 
   return (
     <View style={styles.screen}>
-      {/* Menu */}
       <TouchableOpacity style={styles.menuIcon} onPress={() => navigation.openDrawer()}>
         <Ionicons name="menu" size={28} color="white" />
       </TouchableOpacity>
 
-      {/* Table */}
       <View style={styles.tableWrapper} ref={tableRef} {...panResponder.panHandlers}>
         <ImageBackground source={poolTableImage} style={styles.table} resizeMode="contain">
           <Svg width={TABLE_WIDTH} height={TABLE_HEIGHT}>{renderBalls()}</Svg>
         </ImageBackground>
       </View>
 
-      {/* Ball Picker */}
       <ScrollView horizontal contentContainerStyle={styles.ballPicker} showsHorizontalScrollIndicator={false}>
         {Array.from({ length: 15 }, (_, i) => {
           const num = i + 1;
@@ -169,9 +170,7 @@ export default function ShotLogger() {
                 },
               ]}
               disabled={disabled}
-              onPress={(e) => {
-                if (!disabled) addBall(num);
-              }}
+              onPress={() => addBall(num)}
               onLongPress={(e) => {
                 if (!disabled) onDropFromPicker(e, num);
               }}
