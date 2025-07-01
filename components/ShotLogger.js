@@ -1,221 +1,160 @@
+// components/ShotLogger.js
+
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useRef, useState } from 'react';
 import {
-    ImageBackground,
-    PanResponder,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    UIManager,
-    View,
-    findNodeHandle,
+  findNodeHandle,
+  ImageBackground,
+  PanResponder,
+  ScrollView,
+  StyleSheet,
+  UIManager,
+  View,
 } from 'react-native';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 
 import poolTableImage from '../assets/images/pooltable.jpg';
+import BallPickerItem from './BallPickerItem';
 
-const TABLE_WIDTH = 300;
-const TABLE_HEIGHT = 600;
-const BALL_RADIUS = 12;
-const TABLE_PADDING = 15;
+const TABLE_W = 300;
+const TABLE_H = 600;
+const R = 18;          // ball radius
+const PAD = R + 5;     // padding so balls stay fully inside
 
-const BALL_COLORS = {
-  1: '#FDB927', 2: '#0046AD', 3: '#C8102E', 4: '#552583',
-  5: '#FF6F00', 6: '#006847', 7: '#8B4513', 8: '#000000',
-  9: '#FDB927', 10: '#0046AD', 11: '#C8102E', 12: '#552583',
-  13: '#FF6F00', 14: '#006847', 15: '#8B4513',
+const COLORS = {
+  1:'#FDB927',2:'#0046AD',3:'#C8102E',4:'#552583',
+  5:'#FF6F00',6:'#006847',7:'#8B4513',8:'#000',
+  9:'#FDB927',10:'#0046AD',11:'#C8102E',12:'#552583',
+  13:'#FF6F00',14:'#006847',15:'#8B4513',
 };
 
 export default function ShotLogger() {
-  const navigation = useNavigation();
-  const [balls, setBalls] = useState([]);
-  const [selectedBallId, setSelectedBallId] = useState(null);
-  const [disabledNumbers, setDisabledNumbers] = useState([]);
-  const tableRef = useRef();
-  const lastTapRef = useRef({});
+  const nav = useNavigation();
+  const [balls, setBalls]       = useState([]);
+  const [used, setUsed]         = useState([]);       // numbers placed
+  const [selectedId, setSelId]  = useState(null);
 
-  const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
-  const isBallPlaced = (num) => disabledNumbers.includes(num);
+  const tableRef    = useRef();
+  const tableLayout = useRef({ x:0, y:0 });
 
-  const addBall = (number, x = TABLE_WIDTH / 2, y = TABLE_HEIGHT / 2) => {
-    if (isBallPlaced(number)) return;
-    const clampedX = clamp(x, TABLE_PADDING, TABLE_WIDTH - TABLE_PADDING);
-    const clampedY = clamp(y, TABLE_PADDING, TABLE_HEIGHT - TABLE_PADDING);
+  // clamp helper
+  const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
 
-    setBalls(prev => [
-      ...prev,
-      {
-        id: Date.now(),
-        number,
-        x: clampedX,
-        y: clampedY,
-        color: BALL_COLORS[number],
-        isStriped: number >= 9,
-      },
-    ]);
-    setDisabledNumbers(prev => [...prev, number]);
+  // drop from picker:
+  const onDrop = (num, px, py) => {
+    if (used.includes(num)) return;
+    // if release outside table, ignore
+    const lx = px - tableLayout.current.x;
+    const ly = py - tableLayout.current.y;
+    if (lx < 0||lx>TABLE_W||ly<0||ly>TABLE_H) return;
+
+    const x = clamp(lx, PAD, TABLE_W - PAD);
+    const y = clamp(ly, PAD, TABLE_H - PAD);
+    setBalls(b => [...b, { id: Date.now(), number:num, x, y }]);
+    setUsed(u => [...u, num]);
   };
 
-  const removeBall = (id) => {
-    const ball = balls.find(b => b.id === id);
-    if (!ball) return;
-    setBalls(prev => prev.filter(b => b.id !== id));
-    setDisabledNumbers(prev => prev.filter(n => n !== ball.number));
-    if (selectedBallId === id) setSelectedBallId(null);
-  };
-
-  const onBallTap = (id) => {
-    const now = Date.now();
-    const delta = now - (lastTapRef.current[id] || 0);
-    if (delta < 300) {
-      removeBall(id);
-    } else {
-      lastTapRef.current[id] = now;
-      setSelectedBallId(prev => (prev === id ? null : id));
-    }
-  };
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (_, gesture) => {
-        if (selectedBallId !== null) {
-          UIManager.measure(findNodeHandle(tableRef.current), (_, __, ___, ____, px, py) => {
-            const x = clamp(gesture.moveX - px, TABLE_PADDING, TABLE_WIDTH - TABLE_PADDING);
-            const y = clamp(gesture.moveY - py, TABLE_PADDING, TABLE_HEIGHT - TABLE_PADDING);
-            setBalls(prev =>
-              prev.map(b => (b.id === selectedBallId ? { ...b, x, y } : b))
-            );
-          });
-        }
-      },
-      onPanResponderRelease: () => {},
-    })
-  ).current;
-
-  const onDropFromPicker = (e, number) => {
-    UIManager.measure(findNodeHandle(tableRef.current), (_, __, ___, ____, px, py) => {
-      const { pageX, pageY } = e.nativeEvent;
-      const x = clamp(pageX - px, TABLE_PADDING, TABLE_WIDTH - TABLE_PADDING);
-      const y = clamp(pageY - py, TABLE_PADDING, TABLE_HEIGHT - TABLE_PADDING);
-      addBall(number, x, y);
+  // measure table once
+  const onTableLayout = () => {
+    const node = findNodeHandle(tableRef.current);
+    UIManager.measure(node, (_x,_y,_w,_h,pageX,pageY) => {
+      tableLayout.current = { x:pageX, y:pageY };
     });
   };
 
-  const renderBalls = () =>
-    balls.map(ball => (
-      <React.Fragment key={ball.id}>
-        <Pressable onPress={() => onBallTap(ball.id)} style={{ position: 'absolute' }}>
-          <Circle
-            cx={ball.x}
-            cy={ball.y}
-            r={BALL_RADIUS}
-            fill={ball.color}
-            stroke={
-              selectedBallId === ball.id
-                ? '#ffffff'
-                : ball.isStriped
-                ? '#fff'
-                : 'black'
-            }
-            strokeWidth={selectedBallId === ball.id ? 3 : ball.isStriped ? 2 : 1}
-          />
-          <SvgText
-            x={ball.x}
-            y={ball.y + 5}
-            fontSize="10"
-            fontWeight="bold"
-            fill={ball.number === 8 ? '#fff' : '#000'}
-            textAnchor="middle"
-          >
-            {ball.number}
-          </SvgText>
-        </Pressable>
-      </React.Fragment>
-    ));
-
-  const onSave = () => {
-    console.log('Saved layout:', balls);
-  };
+  // responder for moving existing ball
+  const mover = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: (e) => {
+      const { locationX:lx, locationY:ly } = e.nativeEvent;
+      // hit-test
+      const hit = balls.find(b=>Math.hypot(lx - b.x, ly - b.y) <= R);
+      if (hit) {
+        setSelId(hit.id);
+        return true;
+      }
+      return false;
+    },
+    onPanResponderMove: (_, g) => {
+      if (selectedId == null) return;
+      const nx = clamp(g.moveX - tableLayout.current.x, PAD, TABLE_W - PAD);
+      const ny = clamp(g.moveY - tableLayout.current.y, PAD, TABLE_H - PAD);
+      setBalls(bs => bs.map(b=> b.id===selectedId?{...b,x:nx,y:ny}:b));
+    },
+    onPanResponderRelease: () => setSelId(null),
+  })).current;
 
   return (
-    <View style={styles.screen}>
-      <TouchableOpacity style={styles.menuIcon} onPress={() => navigation.openDrawer()}>
-        <Ionicons name="menu" size={28} color="white" />
-      </TouchableOpacity>
+    <View style={s.screen}>
 
-      <View style={styles.tableWrapper} ref={tableRef} {...panResponder.panHandlers}>
-        <ImageBackground source={poolTableImage} style={styles.table} resizeMode="contain">
-          <Svg width={TABLE_WIDTH} height={TABLE_HEIGHT}>{renderBalls()}</Svg>
+      <Ionicons
+        name="menu"
+        size={28}
+        color="#fff"
+        style={s.menu}
+        onPress={()=>nav.openDrawer()}
+      />
+
+      <View
+        ref={tableRef}
+        style={s.tableWrap}
+        onLayout={onTableLayout}
+        {...mover.panHandlers}
+      >
+        <ImageBackground
+          source={poolTableImage}
+          style={s.tableBg}
+        >
+          <Svg width={TABLE_W} height={TABLE_H}>
+            {balls.map(b=>(
+              <React.Fragment key={b.id}>
+                <Circle
+                  cx={b.x}
+                  cy={b.y}
+                  r={R}
+                  fill={COLORS[b.number]}
+                  stroke={selectedId===b.id?'#fff':'#000'}
+                  strokeWidth={selectedId===b.id?3:1}
+                />
+                <SvgText
+                  x={b.x}
+                  y={b.y+5}
+                  fontSize="14"
+                  fontWeight="bold"
+                  fill={b.number===8?'#fff':'#000'}
+                  textAnchor="middle"
+                >
+                  {b.number}
+                </SvgText>
+              </React.Fragment>
+            ))}
+          </Svg>
         </ImageBackground>
       </View>
 
-      <ScrollView horizontal contentContainerStyle={styles.ballPicker} showsHorizontalScrollIndicator={false}>
-        {Array.from({ length: 15 }, (_, i) => {
-          const num = i + 1;
-          const disabled = isBallPlaced(num);
-          return (
-            <TouchableOpacity
-              key={num}
-              style={[
-                styles.ballButton,
-                {
-                  backgroundColor: BALL_COLORS[num],
-                  borderWidth: num >= 9 ? 2 : 0,
-                  borderColor: num >= 9 ? '#fff' : 'transparent',
-                  opacity: disabled ? 0.3 : 1,
-                },
-              ]}
-              disabled={disabled}
-              onPress={() => addBall(num)}
-              onLongPress={(e) => {
-                if (!disabled) onDropFromPicker(e, num);
-              }}
-            >
-              <Text style={styles.ballText}>{num}</Text>
-            </TouchableOpacity>
-          );
-        })}
+      <ScrollView
+        horizontal
+        contentContainerStyle={s.picker}
+        showsHorizontalScrollIndicator={false}
+      >
+        {Array.from({length:15},(_,i)=>i+1).map(num=>(
+          <BallPickerItem
+            key={num}
+            number={num}
+            color={COLORS[num]}
+            disabled={used.includes(num)}
+            onDrop={onDrop}
+          />
+        ))}
       </ScrollView>
-
-      <TouchableOpacity style={styles.saveButton} onPress={onSave}>
-        <Text style={styles.saveText}>Save</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: 'black', alignItems: 'center', paddingTop: 40 },
-  menuIcon: { position: 'absolute', top: 40, left: 20, zIndex: 10 },
-  tableWrapper: {
-    width: TABLE_WIDTH,
-    height: TABLE_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  table: { width: '100%', height: '100%' },
-  ballPicker: { paddingHorizontal: 10, paddingBottom: 10 },
-  ballButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 6,
-  },
-  ballText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
-  saveButton: {
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 6,
-    marginTop: 10,
-    width: 120,
-    alignItems: 'center',
-  },
-  saveText: { color: 'white', fontWeight: 'bold' },
+const s = StyleSheet.create({
+  screen:   { flex:1, backgroundColor:'#000', alignItems:'center', paddingTop:40 },
+  menu:     { position:'absolute', top:40, left:20, zIndex:10 },
+  tableWrap:{ width:TABLE_W, height:TABLE_H, marginBottom:20 },
+  tableBg:  { width:TABLE_W, height:TABLE_H },
+  picker:   { paddingHorizontal:10, paddingBottom:20 },
 });
