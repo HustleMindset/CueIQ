@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ImageBackground,
   ScrollView,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 // Import the new gesture handler and animation libraries
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { cancelAnimation, runOnJS, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import poolTableImage from '../assets/images/pooltable.jpg'; // Ensure path is correct
 
@@ -21,7 +21,7 @@ const TABLE_HEIGHT = 600;
 const BALL_RADIUS = 12;
 const BALL_DIAMETER = BALL_RADIUS * 2;
 
-// **FIX**: Final adjustment to the top/bottom rail boundaries.
+// Final adjustment to the top/bottom rail boundaries.
 const RAIL_WIDTH_X = 35; // Width of the left/right (long) rails.
 const RAIL_WIDTH_Y = 75; // Width of the top/bottom (short) rails.
 
@@ -47,6 +47,26 @@ const DraggableBall = ({ ball, onDragEnd, onDoubleTap, onSelect, selectedBallId 
   const y = useSharedValue(ball.y);
   const startX = useSharedValue(ball.x);
   const startY = useSharedValue(ball.y);
+  const pulse = useSharedValue(1); // For the selection animation
+
+  // This effect handles the pulsing animation when a ball is selected
+  useEffect(() => {
+    if (selectedBallId === ball.id) {
+      // Start the pulsing animation
+      pulse.value = withRepeat(
+        withSequence(
+          withTiming(1.15, { duration: 500 }),
+          withTiming(1, { duration: 500 })
+        ),
+        -1, // infinite repeat
+        true // reverse direction
+      );
+    } else {
+      // Stop the animation and return to normal size
+      cancelAnimation(pulse);
+      pulse.value = withSpring(1);
+    }
+  }, [selectedBallId, ball.id, pulse]);
 
   // Pan gesture for moving balls on the table
   const panGesture = Gesture.Pan()
@@ -92,12 +112,13 @@ const DraggableBall = ({ ball, onDragEnd, onDoubleTap, onSelect, selectedBallId 
 
   // Animated style for smooth movement and selection feedback
   const animatedStyle = useAnimatedStyle(() => {
-    const scale = selectedBallId === ball.id ? 1.2 : 1;
+    // When dragging, use a fixed larger scale. Otherwise, use the pulse animation value.
+    const scale = isDragging.value ? 1.2 : pulse.value;
     return {
       position: 'absolute',
       left: x.value - BALL_RADIUS,
       top: y.value - BALL_RADIUS,
-      transform: [{ scale: withSpring(isDragging.value ? 1.2 : scale) }],
+      transform: [{ scale: scale }], // Use the calculated scale directly
       zIndex: isDragging.value ? 100 : 10,
     };
   });
