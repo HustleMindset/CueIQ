@@ -20,7 +20,18 @@ const TABLE_WIDTH = 300;
 const TABLE_HEIGHT = 600;
 const BALL_RADIUS = 12;
 const BALL_DIAMETER = BALL_RADIUS * 2;
+
+// **FIX**: Final adjustment to the top/bottom rail boundaries.
+const RAIL_WIDTH_X = 35; // Width of the left/right (long) rails.
+const RAIL_WIDTH_Y = 75; // Width of the top/bottom (short) rails.
+
+const MIN_X = RAIL_WIDTH_X;
+const MAX_X = TABLE_WIDTH - RAIL_WIDTH_X;
+const MIN_Y = RAIL_WIDTH_Y;
+const MAX_Y = TABLE_HEIGHT - RAIL_WIDTH_Y;
+
 const BALL_COLORS = {
+  0: '#FFFFFF', // Cue Ball
   1: '#FDB927', 2: '#0046AD', 3: '#C8102E', 4: '#552583', 5: '#FF6F00',
   6: '#006847', 7: '#8B4513', 8: '#000000', 9: '#FDB927', 10: '#0046AD',
   11: '#C8102E', 12: '#552583', 13: '#FF6F00', 14: '#006847', 15: '#8B4513',
@@ -45,14 +56,18 @@ const DraggableBall = ({ ball, onDragEnd, onDoubleTap, onSelect, selectedBallId 
       startY.value = y.value;
     })
     .onUpdate((event) => {
-      x.value = startX.value + event.translationX;
-      y.value = startY.value + event.translationY;
+      // Calculate the potential new position for the ball's CENTER
+      const newX = startX.value + event.translationX;
+      const newY = startY.value + event.translationY;
+
+      // Clamp the CENTER of the ball so its EDGE stays within the playable area
+      x.value = Math.max(MIN_X + BALL_RADIUS, Math.min(newX, MAX_X - BALL_RADIUS));
+      y.value = Math.max(MIN_Y + BALL_RADIUS, Math.min(newY, MAX_Y - BALL_RADIUS));
     })
     .onEnd(() => {
       // Use runOnJS to update React state from the UI thread
       runOnJS(onDragEnd)(ball.id, x.value, y.value);
     })
-    // **FIX**: Use .onFinalize() instead of .withFinalize()
     .onFinalize(() => {
       isDragging.value = false;
     });
@@ -90,8 +105,8 @@ const DraggableBall = ({ ball, onDragEnd, onDoubleTap, onSelect, selectedBallId 
   return (
     <GestureDetector gesture={composedGesture}>
       <Animated.View style={[styles.ballOnTable, animatedStyle]}>
-         <View style={[styles.ballVisual, { backgroundColor: ball.color, borderWidth: ball.isStriped ? 2 : 0 }]}>
-            <Text style={styles.ballText(ball.number)}>{ball.number}</Text>
+         <View style={[styles.ballVisual, { backgroundColor: ball.color, borderWidth: ball.isStriped ? 2 : (ball.number === 0 ? 1 : 0) }]}>
+            {ball.number > 0 && <Text style={styles.ballText(ball.number)}>{ball.number}</Text>}
         </View>
       </Animated.View>
     </GestureDetector>
@@ -112,17 +127,21 @@ export default function ShotLogger() {
     if (isBallPlaced(number)) return;
     setBalls((prev) => [
       ...prev,
-      { id: Date.now(), number, x: TABLE_WIDTH / 2, y: TABLE_HEIGHT / 2, color: BALL_COLORS[number], isStriped: number >= 9 },
+      { id: Date.now(), number, x: TABLE_WIDTH / 2, y: TABLE_HEIGHT / 4, color: BALL_COLORS[number], isStriped: number >= 9 },
     ]);
   };
 
   const removeBall = (id) => {
-    setBalls((prev) => prev.filter((b) => b.id !== id));
+    const ballToRemove = balls.find(b => b.id === id);
+    if (ballToRemove) {
+        setBalls((prev) => prev.filter((b) => b.id !== id));
+    }
   };
 
   const updateBallPosition = (id, newX, newY) => {
-    const clampedX = Math.max(BALL_RADIUS, Math.min(newX, TABLE_WIDTH - BALL_RADIUS));
-    const clampedY = Math.max(BALL_RADIUS, Math.min(newY, TABLE_HEIGHT - BALL_RADIUS));
+    // Also clamp here for consistency, though the live drag is handled in DraggableBall
+    const clampedX = Math.max(MIN_X + BALL_RADIUS, Math.min(newX, MAX_X - BALL_RADIUS));
+    const clampedY = Math.max(MIN_Y + BALL_RADIUS, Math.min(newY, MAX_Y - BALL_RADIUS));
     setBalls(prev => prev.map(b => b.id === id ? { ...b, x: clampedX, y: clampedY } : b));
   };
   
@@ -157,21 +176,23 @@ export default function ShotLogger() {
         <View style={styles.bottomContainer}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.pickerContent}>
-                    {Array.from({ length: 15 }, (_, i) => i + 1).map((num) => {
+                    {/* Create an array from 0 to 15 for the picker */}
+                    {Array.from({ length: 16 }, (_, i) => i).map((num) => {
                         const isDisabled = isBallPlaced(num);
                         return (
                             <TouchableOpacity
                                 key={num}
                                 style={[styles.pickerBallButton, {
                                     backgroundColor: BALL_COLORS[num],
-                                    borderWidth: num > 8 ? 3 : 0,
+                                    borderWidth: num >= 9 ? 3 : (num === 0 ? 1 : 0),
                                     borderColor: '#FFFFFF',
                                     opacity: isDisabled ? 0.4 : 1,
                                 }]}
                                 disabled={isDisabled}
                                 onPress={() => addBall(num)}
                             >
-                                <Text style={styles.ballText(num)}>{num}</Text>
+                                {/* Only show number for balls 1-15 */}
+                                {num > 0 && <Text style={styles.ballText(num)}>{num}</Text>}
                             </TouchableOpacity>
                         );
                     })}
@@ -207,7 +228,7 @@ const styles = StyleSheet.create({
     borderRadius: BALL_RADIUS,
     justifyContent: 'center',
     alignItems: 'center',
-    borderColor: '#FFFFFF',
+    borderColor: '#000000', // Border for cue ball on table
   },
   saveButtonWrapper: { backgroundColor: '#007AFF', paddingVertical: 15, alignItems: 'center', marginTop: 15, marginHorizontal: 20, borderRadius: 10 },
   saveText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
