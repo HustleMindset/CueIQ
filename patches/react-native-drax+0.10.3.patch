@@ -1,4 +1,8 @@
 diff --git a/node_modules/react-native-drax/build/hooks.js b/node_modules/react-native-drax/build/hooks.js
 new file mode 100644
-index 0000000..6219bb0
-Binary files /dev/null and b/node_modules/react-native-drax/build/hooks.js differ
+index 0000000..a099545
+--- /dev/null
++++ b/node_modules/react-native-drax/build/hooks.js
+@@ -0,0 +1 @@
++module.exports = {};
+\ No newline at end of file
