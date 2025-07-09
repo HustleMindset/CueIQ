@@ -61,7 +61,7 @@ interface PathPoint {
   y: number;
 }
 
-const DraggableBall = React.memo(({ ball, onDragEnd, onDoubleTap, mode, otherBalls, selectedBallId, onSelect }: { ball: Ball; onDragEnd: (id: number, x: number, y: number) => void; onDoubleTap: (id: number) => void; mode: string; otherBalls: Ball[]; selectedBallId: number | null; onSelect: (id: number) => void }) => {
+const DraggableBall = React.memo(({ ball, onDragEnd, onDoubleTap, mode, otherBalls, selectedBallId, onDragSelect, onToggleSelect }: { ball: Ball; onDragEnd: (id: number, x: number, y: number) => void; onDoubleTap: (id: number) => void; mode: string; otherBalls: Ball[]; selectedBallId: number | null; onDragSelect: (id: number) => void; onToggleSelect: (id: number) => void }) => {
   const [x, setX] = useState(ball.x);
   const [y, setY] = useState(ball.y);
   const positionRef = useRef({ x: ball.x, y: ball.y }); // Track live position
@@ -106,7 +106,7 @@ const DraggableBall = React.memo(({ ball, onDragEnd, onDoubleTap, mode, otherBal
           }
           startRef.current = positionRef.current; // Set drag start position
           touchRef.current = { x: evt.nativeEvent.pageX, y: evt.nativeEvent.pageY }; // Set initial touch
-          onSelect(ball.id); // Always select this ball on drag start
+          onDragSelect(ball.id); // Always select this ball on drag start
           if (__DEV__) {
             const { x: currX, y: currY } = positionRef.current;
             console.log('Drag began for ball:', ball.id, 'at live state:', currX, currY);
@@ -202,8 +202,8 @@ const DraggableBall = React.memo(({ ball, onDragEnd, onDoubleTap, mode, otherBal
         if (__DEV__) console.log('Single tap timeout for ball:', ball.id); // Debug timeout
       }, doubleTapDelay);
     }
-    onSelect(ball.id); // Select on tap or single press
-  }, [ball.id, onDoubleTap, onSelect]);
+    onToggleSelect(ball.id); // Toggle selection on tap
+  }, [ball.id, onDoubleTap, onToggleSelect]);
 
   return (
     <View
@@ -328,8 +328,12 @@ export default function ShotLogger() {
     }
   };
 
-  const onSelect = (id: number) => {
-    setSelectedBallId(id); // Always set selectedBallId, no toggle
+  const handleDragSelect = (id: number) => {
+    setSelectedBallId(id); // Always select on drag
+  };
+
+  const handleToggleSelect = (id: number) => {
+    setSelectedBallId((prev) => (prev === id ? null : id)); // Toggle on tap
   };
 
   return (
@@ -358,7 +362,8 @@ export default function ShotLogger() {
                 mode={mode}
                 otherBalls={balls.filter((b) => b.id !== ball.id)} // Pass other balls for collision detection
                 selectedBallId={selectedBallId}
-                onSelect={onSelect}
+                onDragSelect={handleDragSelect}
+                onToggleSelect={handleToggleSelect}
               />
               {paths[ball.id] && (
                 <Svg style={styles.table}>
