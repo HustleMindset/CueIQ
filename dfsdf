@@ -1,0 +1,78 @@
+[33mcommit 74a508215cde62d1b203f223e9b2b4174ad9fdbe[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdrag-milestone[m[33m)[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Sun Jul 6 22:43:21 2025 -0700
+
+    Milestone: Complete drag functionality with rail sliding using startRef and touchRef, including UI and config updates
+
+[33mcommit a9126e764ff8f56aab71bf9a03c07f9cb93b7bc8[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Sun Jul 6 08:56:43 2025 -0700
+
+    Prepare for clean prebuild after removing expo-router
+
+[33mcommit 5ca76ecc225076a666ca1e06b24060e255ee5941[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Fri Jul 4 13:10:39 2025 -0700
+
+    Ensure dependencies for ShotLogger
+
+[33mcommit b13c1e1c01e6cf24306cd088b715391f1cb88464[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Tue Jul 1 22:12:00 2025 -0700
+
+    Drawing Paths is done.
+
+[33mcommit cd877f6cfc1b05b43a82245b1cc24b9bf4c4c70a[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Tue Jul 1 19:15:10 2025 -0700
+
+    Pulsing Animation when selecting a ball
+
+[33mcommit 10ca0ae0e180478644cde1c7c0e1e4a247653e73[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Tue Jul 1 19:06:41 2025 -0700
+
+    Feat: Implement and fine-tune table boundaries for ball movement
+
+[33mcommit bf2ed4e85de49bd512f11f522794f3703476583c[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Tue Jul 1 17:27:04 2025 -0700
+
+    Drag and Move around the table is working
+
+[33mcommit 1e557eef30277b4b1465010823194884dc6f9147[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Mon Jun 30 23:15:18 2025 -0700
+
+    Stub in hooks.js for react-native-drax and patch-package setup
+
+[33mcommit 344817b9aed9722e20cc2843e3afb2fb0d579137[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Mon Jun 30 21:44:14 2025 -0700
+
+    Test commit from terminal
+
+[33mcommit b92f3ad95a11e7952878db2957021551df92c96b[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Tue Jun 24 19:29:28 2025 -0700
+
+    Add complete working ShotLogger
+
+[33mcommit 2d8740b52d76e5d08fc35a66f597f674e747f0ac[m
+Merge: e440b67 4cedf17
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Tue Jun 24 18:51:56 2025 -0700
+
+    Resolve merge conflicts
+
+[33mcommit e440b6745e83fcac98a0d62768a0f9d2e271d29e[m
+Author: Firas <Hustle.Mindset.Reels@gmail.com>
+Date:   Tue Jun 24 18:46:01 2025 -0700
+
+    Initial commit with working project structure
+
+[33mcommit 4cedf172b65df4859417ef3b01e721148945fc0e[m
+Author: HustleMindset <Hustle.mindset.reels@gmail.com>
+Date:   Tue Jun 24 03:05:08 2025 -0700
+
+    Initial commit

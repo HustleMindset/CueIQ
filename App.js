@@ -1,11 +1,10 @@
-import { AppRegistry, SafeAreaView } from 'react-native';
+import { registerRootComponent } from 'expo';
 import ShotLogger from './components/ShotLogger';
 
-const App = () => (
-  <SafeAreaView style={{ flex: 1 }}>
-    <ShotLogger />
-  </SafeAreaView>
-);
+function App() {
+  return <ShotLogger />;
+}
 
-AppRegistry.registerComponent('main', () => App);
+registerRootComponent(App);
+
 export default App;
